@@ -4,7 +4,7 @@ bit     : 0|1
 nybl    : 0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|A|B|C|D|E|F
 int     : [-] <digit> { <digit> }
         | [-] 0x <nybl> { <nybl> }
-	    | [-] 0b <bit> { <bit> }
+        | [-] 0b <bit> { <bit> }
 id      : <letter> | _ { <letter> | <digit> | _ }
 pType   : i8 | u8 | i16 | u16 | i32 | u32 | i64 | u64 | i128 | u128 | f32 | f64 | f80 | f128 | usize | &
 char    : ' <ASCII> '
@@ -21,8 +21,8 @@ mem     : "{" [ <values> ] "}"
 address : & <id> | <mem> | <string>
 oper    : <negate>
         | <func>
-	    | <deref>
-	    | <paren>
+        | <deref>
+        | <paren>
         | <mem>
         | <scope>
         | <incDec>
@@ -52,12 +52,12 @@ stmt    : <if>
         | <vReAsgn>
         | <varDel>
         | <memAsgn>
-	    | <fncStmt>
-	    | <label>
-	    | <jmp>
+        | <fncStmt>
+        | <label>
+        | <jmp>
         | <while>
         | <expr>
-	    | ;
+        | ;
 param   : [&] <id> <typeDec>
 params  : <param> { , <param> }
 funcDec : <id> "(" [ <params> ] ")" [ <typeDec> ] <stmt>

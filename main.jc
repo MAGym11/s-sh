@@ -1,4 +1,15 @@
-main()
+main(&num:i32):i32
 {
-	num:4;
+    print("Hello, World!");
+
+    if (x == 0) _
+    arrPtr: = { 1, 2, 3, 4 };
+    i: = 0;
+    while (i++ < 4)
+    {
+        [arrPtr + i*i32]:i32 = i;
+    }
+    _ i;
+
+    0
 }
