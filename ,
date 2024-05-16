@@ -1,0 +1,54 @@
+@std::>mem
+
+Array<T>: {
+    ptr:&T;
+    length:usize;
+    capacity:usize;
+}
+
+Array<T>:: {
+
+    #new(self, `#values{#value:<expr>},{0..}`) {
+        Array<T>{0, 0, 0}
+        #values{
+            .push(#value)
+        }
+    }
+
+    #at(self, index:usize) {
+        [self.ptr + index*T]:T
+    }
+
+    push(&self, value:T) {
+        self.length >= self.capacity => self.increase_capacity();
+        self.at!(self.length) = value
+        self.length++
+    }
+
+    increase_capacity(&self) {
+        self.capacity == 0 => {
+            self.capacity = 2
+            self.ptr = mem:>alloc(self.capacity)
+            <- _
+        }
+
+        self.capacity *= 2
+        temp_ptr: = mem:>alloc(self.capacity)
+        mem:>copy_mem(self.ptr, temp_ptr, self.length)
+        mem:>dealloc(self.ptr)
+        self.ptr = temp_ptr
+    }
+
+    slice(self, start:usize, end:usize) Slice<T> {
+        <- Slice<T>{self.ptr + start, end - start}
+    }
+
+    iter#(`| index:<id> | start:<expr> .. opt1:<[ end:<expr> ]> | opt2:<[ element:<id> ]> | { stmts:<any> }`) {
+        <index>: = <start>;
+        <opt2 [ <element>:T = _ ]>;
+        while (<index>++ "<" <opt [ <end> ] | .length> ) {
+            <opt2 [ <element> = .![i]; ]>
+            <stmts>
+        }
+    }
+}

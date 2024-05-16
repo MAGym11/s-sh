@@ -1,0 +1,6 @@
+- pure functions
+- use before dec
+- type checking
+- fixed sized types
+- types are keywords
+- can't assign mem to var

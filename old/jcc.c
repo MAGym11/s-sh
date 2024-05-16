@@ -192,14 +192,13 @@ char cmpStr(const char* str1, const char* str2, int* index)
 
 char parseIdentifier(char** tokens, int* index)
 {
-    char* types[16] = { "i8", "u8", "i16", "u16", "i32", "u32", "i64", "u64", "i128", "u128", "f32", "f64", "f80", "f128", "usize", "&" };
+    char* types[16] = { "i8", "u8", "i16", "u16", "i32", "u32", "i64", "u64", "i128", "u128", "f32", "f64", "f128", "isize", "usize", "&" };
     for (int i = 0; i < 16; i++)
     {
         if (!strcmp(tokens[*index], types[i])) return 0;
     }
 	if (!strcmp(tokens[*index], "return") || !strcmp(tokens[*index], "if") || !strcmp(tokens[*index], "while")) return 0;
-	if (!parseLetter(tokens[*index][0]))
-        if (tokens[*index] != '_') return 0;
+	if (!parseLetter(tokens[*index][0])) return 0;
 	for (int i = 1; i < strlen(tokens[*index]); i++)
 	{
 		if (!parseLetter(tokens[*index][i]) && !parseDigit(tokens[*index][i]) && tokens[*index][i] != '_') return 0;
@@ -279,7 +278,7 @@ char parseInteger(char** tokens, int* index)
 
 char parsePType(char** tokens, int* index)
 {
-    char* types[16] = { "i8", "u8", "i16", "u16", "i32", "u32", "i64", "u64", "i128", "u128", "f32", "f64", "f80", "f128", "usize", "&" };
+    char* types[16] = { "i8", "u8", "i16", "u16", "i32", "u32", "i64", "u64", "i128", "u128", "f32", "f64", "f128", "isize", "usize", "&" };
     for (int i = 0; i < 16; i++)
     {
         if (!strcmp(tokens[*index], types[i])) {(*index)++; return 1;}

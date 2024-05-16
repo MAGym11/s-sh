@@ -1,0 +1,106 @@
+Tokens
+
+IDENTIFIER
+INTEGER
+REAL
+STRING
+CHARACTER
+NEWLINE
+` ~ ! @ # % ^ & * ( ) [ ] { } - + = / | : ; < > ? , . _
+== != ++ -- += -= *= /= %= <<= >>= &= |= ^= <= >= || << => <- -> <> :: :> ::>
+
+Grammar
+
+file        : {enum|struct|imple|func|import}
+enum        : ID [gnrc_dec] ":" "{" ID [":" type] {"," ID [":" type} [","]"}"
+struct      : ID [gnrc_dec] ":" "{" param {";" param} [";"] "}" // packing
+imple       : ID [gnrc_dec] ":" ":" "{" methods "}"
+gnrc_dec    : "<" ID ">"
+methods     : {method}
+method      : ID "(" [m_params] ")" [ret_type] stmt
+m_params    : self_param
+            | self_param "," params
+            | params
+self_param  : ["&"] ID
+funcs       : func
+            | func func
+func        : ID "(" [params] ")" [ret_type] stmt
+params      : param
+            | params "," param
+param       : ID ":" type
+            | "&" ID ":" "&" type
+exprs       : expr_2
+            | exprs "," expr_2
+expr_0      : ID ["!"] ":" "=" expr_2
+            | ID ["!"] ":" type "=" expr_2
+            | expr_3 "=>" stmt [else]
+            | expr_9 "==" "{" {case} "}"
+            | expr_1
+            | ID ":"
+expr_1      : expr_2 {("="|"+="|"-="|"*="|"/="|"%="|"<<="|">>="|"&="|"|="|"^=") expr_2}
+expr_2      | expr_3 "=>" expr_g "_" "=>" expr_g
+            | expr_3
+expr_3      : expr_4 {"||" expr_4}
+expr_4      : expr_5 {"&&" expr_5}
+expr_5      : expr_6 {"|" expr_6}
+expr_6      : expr_7 {"^" expr_7}
+expr_7      : expr_8 {"&" expr_8}
+expr_8      : expr_9 {("=="|"!=") expr_9}
+expr_9      : expr_a {"<"|">"|"<="|">=") expr_a}
+expr_a      : expr_b {("<<"|">>") expr_b}
+expr_b      : expr_c {("+"|"-") expr_c)
+expr_c      : expr_d {("%"|"*"|"/") expr_d}
+expr_d      : "~" expr_e
+            | "!" expr_e
+            | "&" expr_e
+            | "-" expr_e
+            | "++" expr_e
+            | "--" expr_e
+            | expr_e "++"
+            | expr_e "--"
+            | expr_e
+expr_e      : cust_type "::" (func_call|ID)
+            | expr_f {"." (func_call|ID)}
+expr_f      : expr_g ":" type
+            | expr_g
+expr_g      : "(" expr_2 ")"
+            | "[" expr_2 "]"
+            | func_call
+            | cust_type "{" exprs "}"
+            | "{" exprs "}"
+            | ID
+            | INTEGER
+            | REAL
+            | STRING
+            | CHARACTER
+            | "_"
+func_call   : ID "(" exprs ")"
+stmts       : stmt
+            | stmts (";"|NEWLINE) stmt
+stmt        : "{" [stmts] "}"
+            | ? expr_2 stmt
+            | "<-" expr_2
+            | "->" ID
+            | "<>" stmt
+            | expr_0
+            | import
+            | ";"
+else        : "_" "=>" stmt
+case        : case_value {"," case_value} "=>" case_stmts
+case_value  : INTEGER
+            | CHARACTER
+case_stmts  : "{" [stmts] "}"
+            | stmt {stmt}
+ret_type    : type
+type        : "&" type
+            | cust_type
+cust_type   : "_"
+            | ID [gnrc]
+gnrc        : "<" type ">"
+import      : "@" ID ["::>" module]
+module      : ID [":>" module]
+
+*macro       : "#" ID "(" ... ")"
+
+*char    : "'" <UTF-8> "'"
+*string  : '"' {<UTF-8>} '"'

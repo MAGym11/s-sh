@@ -1,1 +1,3 @@
-gcc jcc.c -o jcc && jcc
+@echo off
+cd ./src
+gcc main.c && a main.sw
