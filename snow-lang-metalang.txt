@@ -12,27 +12,27 @@ NEWLINE
 Grammar
 
 file        : {enum|struct|imple|func|import}
-enum        : ID [gnrc_dec] ":" "{" ID [":" type] {"," ID [":" type} [","]"}"
-struct      : ID [gnrc_dec] ":" "{" param {";" param} [";"] "}" // packing
+enum        : ID [gnrc_dec] ":" "{" ID [":" type] {"," ID [":" type]} [","]"}"
+struct      : ID [gnrc_dec] ":" "{" param {";" param} [";"] "}"
 imple       : ID [gnrc_dec] ":" ":" "{" methods "}"
-gnrc_dec    : "<" ID ">"
+gnrc_dec    : "<" ID {"," ID} ">"
 methods     : {method}
-method      : ID "(" [m_params] ")" [ret_type] stmt
+method      : ID [gnrc_dec] "(" [m_params] ")" [ret_type] cmp_stmt
 m_params    : self_param
             | self_param "," params
             | params
-self_param  : ["&"] ID
+self_param  : ["&"] ["!"] ID
 funcs       : func
             | func func
-func        : ID "(" [params] ")" [ret_type] stmt
+func        : ID [gnrc_dec] "(" [params] ")" [ret_type] cmp_stmt
 params      : param
             | params "," param
 param       : ID ":" type
-            | "&" ID ":" "&" type
+            | "&" ID ":" type
 exprs       : expr_2
             | exprs "," expr_2
-expr_0      : ID ["!"] ":" "=" expr_2
-            | ID ["!"] ":" type "=" expr_2
+expr_0      : ID ":" "=" expr_2
+            | ID ":" type "=" expr_2
             | expr_3 "=>" stmt [else]
             | expr_9 "==" "{" {case} "}"
             | expr_1
@@ -74,10 +74,10 @@ expr_g      : "(" expr_2 ")"
             | STRING
             | CHARACTER
             | "_"
-func_call   : ID "(" exprs ")"
+func_call   : ID [gnrc] "(" exprs ")"
 stmts       : stmt
             | stmts (";"|NEWLINE) stmt
-stmt        : "{" [stmts] "}"
+stmt        : cmp_stmt
             | ? expr_2 stmt
             | "<-" expr_2
             | "->" ID
@@ -85,6 +85,7 @@ stmt        : "{" [stmts] "}"
             | expr_0
             | import
             | ";"
+cmp_stmt    : "{" [stmts] "}"
 else        : "_" "=>" stmt
 case        : case_value {"," case_value} "=>" case_stmts
 case_value  : INTEGER
@@ -92,11 +93,11 @@ case_value  : INTEGER
 case_stmts  : "{" [stmts] "}"
             | stmt {stmt}
 ret_type    : type
-type        : "&" type
-            | cust_type
+type        : ["!"] "&" type
+            | ["!"] cust_type
 cust_type   : "_"
             | ID [gnrc]
-gnrc        : "<" type ">"
+gnrc        : "<" type {"," type} ">"
 import      : "@" ID ["::>" module]
 module      : ID [":>" module]
 

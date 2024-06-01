@@ -51,7 +51,7 @@ typedef enum {
     not, bNot, address, negate, preInc, preDec, postInc, postDec,
     dot_op, double_colon_op,
     cast,
-    paren, deref, structure, structure_n_type, func_call, id, in, re, str, cha, undrscr,
+    paren, deref, structure, structure_n_type, func_call, func_call_gnrc, id, in, re, str, cha, undrscr,
     type_gnrc, type_n_gnrc
 } Expr_Type;
 
@@ -69,16 +69,20 @@ typedef struct {
     Array stmts;
     Array cases;
     Array structure_type;
+    Array gnrc;
 } Expr;
 
 typedef struct {
     Id id;
     bool is_reference;
+    bool is_mutable;
     Expr type_expr;
 } Param;
 
 typedef struct {
     Id id;
+    bool has_generic;
+    Array generic;
     Array params;
     Expr ret_type;
     Stmt stmt;
@@ -92,19 +96,21 @@ typedef struct {
     Id id;
     Cust_Type_Type cust_type_type;
     bool has_generic;
-    Id generic;
+    Array generic;
     Array vals;
 } Cust_Type;
 
 typedef struct {
     Id cust_type_name;
     bool has_generic;
-    Id generic;
+    Array generic;
     Array methods;
 } Imple;
 
 typedef struct {
     Id id;
+    bool has_generic;
+    Array generic;
     bool has_self_param;
     Param self_param;
     Array params;

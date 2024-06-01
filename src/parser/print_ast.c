@@ -157,7 +157,9 @@ void print_type_expr(Expr expr, int indent) {
             print_id(expr.id_value, indent+1);
             indentation(indent+1);
             printf("gnrc:\n");
-            print_type_expr(((Expr*)(expr.exprs.ptr))[0], indent+2);
+            for (int i = 0; i < expr.gnrc.length; i++) {
+                print_type_expr(((Expr*)(expr.gnrc.ptr))[i], indent+2);
+            }
             break;
         case type_n_gnrc:
             printf("type\n");
@@ -551,6 +553,15 @@ void print_expr(Expr expr, int indent) {
             if (expr.exprs.length > 0)
                 print_exprs(expr.exprs, indent+1);
             break;
+        case func_call_gnrc:
+            printf("func_call_gnrc\n");
+            print_type(expr.type, indent+1);
+            print_id(expr.id_value, indent+1);
+            indentation(indent+1);
+            printf("generic:\n");
+            print_exprs(expr.gnrc, indent+2);
+            print_exprs(expr.exprs, indent+1);
+            break;
         case id:
             printf("identifier\n");
             print_type(expr.type, indent+1);
@@ -588,13 +599,25 @@ void print_expr(Expr expr, int indent) {
             break;
         case type_gnrc:
             printf("type_gnrc\n");
+            indentation(indent+1);
+            if (expr.mut)
+                printf("mutable\n");
+            else
+                printf("immutable\n");
             print_id(expr.id_value, indent+1);
             indentation(indent+1);
             printf("gnrc:\n");
-            print_type_expr(((Expr*)(expr.exprs.ptr))[0], indent+2);
+            for (int i = 0; i < expr.gnrc.length; i++) {
+                print_type_expr(((Expr*)(expr.gnrc.ptr))[i], indent+2);
+            }
             break;
         case type_n_gnrc:
             printf("type\n");
+            indentation(indent+1);
+            if (expr.mut)
+                printf("mutable\n");
+            else
+                printf("immutable\n");
             print_id(expr.id_value, indent+1);
             break;
         default:
@@ -625,10 +648,23 @@ void print_params(Array params, int indent) {
     }
 }
 
+void print_ids(Array ids, int indent) {
+    indentation(indent);
+    printf("ids:\n");
+    for (int i = 0; i < ids.length; i++) {
+        print_id(((Id*)(ids.ptr))[i], indent+1);
+    }
+}
+
 void print_func(Func func) {
     printf("func: ");
     print_String(func.id.name);
     printf("\n");
+    if (func.has_generic) {
+        indentation(1);
+        printf("generic:\n");
+        print_ids(func.generic, 2);
+    }
     print_params(func.params, 2);
     print_ret_type(func.ret_type);
     print_stmt(func.stmt, 1);
@@ -661,7 +697,7 @@ void print_enum(Cust_Type en) {
     if (en.has_generic) {
         indentation(2);
         printf("generic_name:\n");
-        print_id(en.generic, 3);
+        print_ids(en.generic, 3);
     }
     print_enum_vals(en.vals);
 }
@@ -693,7 +729,7 @@ void print_struct(Cust_Type struc) {
     if (struc.has_generic) {
         indentation(2);
         printf("generic_name:\n");
-        print_id(struc.generic, 3);
+        print_ids(struc.generic, 3);
     }
     print_struct_vals(struc.vals);
 }
@@ -709,13 +745,34 @@ void print_cust_type(Cust_Type cust_type) {
     }
 }
 
+void print_self_param(Param param) {
+    indentation(3);
+    printf("self_param:\n");
+    print_id(param.id, 4);
+    if (param.is_reference) {
+        indentation(4);
+        printf("reference\n");
+    }
+        indentation(4);
+    if (param.is_mutable) printf("mutable\n");
+    else printf("immutable\n");
+    indentation(4);
+    printf("type:\n");
+    print_type_expr(param.type_expr, 5);
+}
+
 void print_method(Method method) {
     indentation(2);
     printf("method: ");
     print_String(method.id.name);
     printf("\n");
+    if (method.has_generic) {
+        indentation(3);
+        printf("generic:\n");
+        print_ids(method.generic, 4);
+    }
     if (method.has_self_param)
-        print_param(method.self_param, 3);
+        print_self_param(method.self_param);
     print_params(method.params, 3);
     print_ret_type(method.ret_type);
     print_stmt(method.stmt, 3);
@@ -738,7 +795,7 @@ void print_imple(Imple imple) {
     if (imple.has_generic) {
         indentation(1);
         printf("generic_name:\n");
-        print_id(imple.generic, 2);
+        print_ids(imple.generic, 2);
     }
     print_methods(imple.methods);
 }

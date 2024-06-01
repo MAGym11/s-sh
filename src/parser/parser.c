@@ -87,16 +87,23 @@ parse_import_ret:
     return true;
 }
 
-bool parse_gnrc(Expr* expr, Tokens tokens, int* pos) {
+bool parse_gnrc(Array* gnrc, Tokens tokens, int* pos) {
+    Array temp_gnrc = {0, 0, 0};
     Expr temp_expr;
 
     int temp_pos = *pos;
 
     if (!parse_token(lessThan, tokens, &temp_pos)) return false;
     if (!parse_type(&temp_expr, tokens, &temp_pos)) return false;
-    if (!parse_token(greaterThan, tokens, &temp_pos)) parse_error(tokens, temp_pos, "'>'");
+    Exprs_push(&temp_gnrc, temp_expr);
+    while (!parse_token(greaterThan, tokens, &temp_pos)) {
+        if (!parse_token(comma, tokens, &temp_pos)) parse_error(tokens, temp_pos, "'>'");
 
-    *expr = temp_expr;
+        if (!parse_type(&temp_expr, tokens, &temp_pos)) return false;
+        Exprs_push(&temp_gnrc, temp_expr);
+    }
+
+    *gnrc = temp_gnrc;
     
     *pos = temp_pos;
     return true;
@@ -105,6 +112,7 @@ bool parse_gnrc(Expr* expr, Tokens tokens, int* pos) {
 bool parse_cust_type(Expr* expr, Tokens tokens, int* pos) {
     Expr temp_expr1;
     temp_expr1.exprs.ptr = 0; temp_expr1.exprs.capacity = 0; temp_expr1.exprs.length = 0;
+    temp_expr1.gnrc.ptr = 0; temp_expr1.gnrc.capacity = 0; temp_expr1.gnrc.length = 0;
     Expr temp_expr2;
 
     int temp_pos = *pos;
@@ -123,10 +131,9 @@ bool parse_cust_type(Expr* expr, Tokens tokens, int* pos) {
     temp_expr1.id_value.id_type = type_name;
     temp_expr1.id_value.name = tokens.ptr[temp_pos-1].string_value;
 
-    if (parse_gnrc(&temp_expr2, tokens, &temp_pos)) {
-        Exprs_push(&temp_expr1.exprs, temp_expr2);
+    if (parse_gnrc(&temp_expr1.gnrc, tokens, &temp_pos))
         temp_expr1.expr_type = type_gnrc;
-    } else
+    else
         temp_expr1.expr_type = type_n_gnrc;
 
     temp_expr1.type.type_type = custom;
@@ -414,6 +421,7 @@ bool parse_structure(Expr* expr, Tokens tokens, int* pos) {
 }
 
 bool parse_func_call(Expr* expr, Tokens tokens, int* pos) {
+    Array temp_generic;
     Expr temp_expr;
     temp_expr.exprs.ptr = 0; temp_expr.exprs.length = 0; temp_expr.exprs.capacity = 0;
 
@@ -423,11 +431,17 @@ bool parse_func_call(Expr* expr, Tokens tokens, int* pos) {
     temp_expr.id_value.id_type = func_name;
     temp_expr.id_value.name = tokens.ptr[temp_pos-1].string_value;
 
+    if (parse_gnrc(&temp_generic, tokens, &temp_pos)) {
+        temp_expr.expr_type = func_call_gnrc;
+        temp_expr.gnrc = temp_generic;
+    } else {
+        temp_expr.expr_type = func_call;
+    }
+
     if (!parse_token(oParenthesis, tokens, &temp_pos)) return false;
     parse_exprs(&temp_expr.exprs, tokens, &temp_pos);
     if (!parse_token(cParenthesis, tokens, &temp_pos)) parse_error(tokens, temp_pos, "')'");
 
-    temp_expr.expr_type = func_call;
     temp_expr.type.type_type = undefined;
 
     *expr = temp_expr;
@@ -571,21 +585,27 @@ parse_expr_f_ret:
     return true;
 }
 
-bool parse_gnrc_dec(Id* generic, bool* has_generic, Tokens tokens, int* pos) {
-    *has_generic = false;
-
-    Id temp_generic;
+bool parse_gnrc_dec(Array* generic, Tokens tokens, int* pos) {
+    Array temp_generic = {0, 0, 0};
+    Id temp_id;
 
     int temp_pos = *pos;
 
     if (!parse_token(lessThan, tokens, &temp_pos)) return false;
     if (!parse_token(identifier, tokens, &temp_pos)) return false;
-    temp_generic.id_type = gnrc_name;
-    temp_generic.name = tokens.ptr[temp_pos-1].string_value;
-    if (!parse_token(greaterThan, tokens, &temp_pos)) return false;
+    temp_id.id_type = gnrc_name;
+    temp_id.name = tokens.ptr[temp_pos-1].string_value;
+    Ids_push(&temp_generic, temp_id);
+    while (!parse_token(greaterThan, tokens, &temp_pos)) {
+        if (!parse_token(comma, tokens, &temp_pos)) parse_error(tokens, temp_pos, "'>'");
+
+        if (!parse_token(identifier, tokens, &temp_pos)) parse_error(tokens, temp_pos, "identifier");
+        temp_id.id_type = gnrc_name;
+        temp_id.name = tokens.ptr[temp_pos-1].string_value;
+        Ids_push(&temp_generic, temp_id);
+    }
 
     *generic = temp_generic;
-    *has_generic = true;
 
     *pos = temp_pos;
     return true;
@@ -1419,7 +1439,6 @@ bool parse_param(Param* param, Tokens tokens, int* pos) {
         temp_param.id.name = tokens.ptr[temp_pos-1].string_value;
 
         if (!parse_token(colon, tokens, &temp_pos)) parse_error(tokens, temp_pos, "':'");
-        if (!parse_token(ampersand, tokens, &temp_pos)) parse_error(tokens, temp_pos, "'&'");
         if (!parse_type(&temp_param.type_expr, tokens, &temp_pos)) parse_error(tokens, temp_pos, "type");
         if (temp_param.type_expr.type.type_type == null) semantic_error(tokens, temp_pos, "invalid type: address of null");
         temp_param.is_reference = true;
@@ -1458,6 +1477,8 @@ parse_params_ret:
 
 bool parse_func(Func* func, Tokens tokens, int* pos) {
     Id id;
+    bool has_generic;
+    Array generic;
     Array params = {0, 0, 0};
     Expr ret_type;
     Stmt stmt;
@@ -1468,6 +1489,8 @@ bool parse_func(Func* func, Tokens tokens, int* pos) {
     id.id_type = func_name;
     id.name = tokens.ptr[temp_pos-1].string_value;
 
+    has_generic = parse_gnrc_dec(&generic, tokens, &temp_pos);
+
     if (!parse_token(oParenthesis, tokens, &temp_pos)) return false;
 
     parse_params(&params, tokens, &temp_pos);
@@ -1477,9 +1500,11 @@ bool parse_func(Func* func, Tokens tokens, int* pos) {
     ret_type.expr_type = none;
     parse_ret_type(&ret_type, tokens, &temp_pos);
 
-    if (!parse_stmt(&stmt, tokens, &temp_pos)) parse_error(tokens, temp_pos, "type or statement");
+    if (!parse_cmp_stmt(&stmt, tokens, &temp_pos)) parse_error(tokens, temp_pos, "'{'");
 
     func->id = id;
+    func->has_generic = has_generic;
+    func->generic = generic;
     func->params = params;
     func->ret_type = ret_type;
     func->stmt = stmt;
@@ -1537,7 +1562,7 @@ parse_enum_vals_ret:
 bool parse_enum(Cust_Type* en, Tokens tokens, int* pos) {
     Id id;
     bool has_generic;
-    Id generic;
+    Array generic;
     Array vals = {0, 0, 0};
 
     int temp_pos = *pos;
@@ -1546,7 +1571,7 @@ bool parse_enum(Cust_Type* en, Tokens tokens, int* pos) {
     id.id_type = type_name;
     id.name = tokens.ptr[temp_pos-1].string_value;
 
-    parse_gnrc_dec(&generic, &has_generic, tokens, &temp_pos);
+    has_generic = parse_gnrc_dec(&generic, tokens, &temp_pos);
 
     if (!parse_token(colon, tokens, &temp_pos)) return false;
 
@@ -1609,7 +1634,7 @@ parse_struct_vals_ret:
 bool parse_struct(Cust_Type* struc, Tokens tokens, int* pos) {
     Id id;
     bool has_generic;
-    Id generic;
+    Array generic;
     Array vals = {0, 0, 0};
 
     int temp_pos = *pos;
@@ -1618,7 +1643,7 @@ bool parse_struct(Cust_Type* struc, Tokens tokens, int* pos) {
     id.id_type = type_name;
     id.name = tokens.ptr[temp_pos-1].string_value;
 
-    parse_gnrc_dec(&generic, &has_generic, tokens, &temp_pos);
+    has_generic = parse_gnrc_dec(&generic, tokens, &temp_pos);
 
     if (!parse_token(colon, tokens, &temp_pos)) return false;
     if (!parse_token(oBrace, tokens, &temp_pos)) return false;
@@ -1643,12 +1668,17 @@ bool parse_self_param(Param* self_param, bool* has_self_param, Tokens tokens, in
     int temp_pos = *pos;
 
     if (parse_token(ampersand, tokens, &temp_pos)) {
+        if (parse_token(exclamation, tokens, &temp_pos)) temp_param.is_mutable = true;
+        else temp_param.is_mutable = false;
+
         if (!parse_token(identifier, tokens, &temp_pos)) return false;
         temp_param.id.id_type = param_name;
         temp_param.id.name = tokens.ptr[temp_pos-1].string_value;
 
         temp_param.is_reference = true;
     } else {
+        if (parse_token(exclamation, tokens, &temp_pos)) temp_param.is_mutable = true;
+        else temp_param.is_mutable = false;
         if (!parse_token(identifier, tokens, &temp_pos)) return false;
         temp_param.id.id_type = param_name;
         temp_param.id.name = tokens.ptr[temp_pos-1].string_value;
@@ -1669,7 +1699,7 @@ bool parse_m_param(Param* param, Tokens tokens, int* pos) {
     int temp_pos = *pos;
 
     if (parse_token(ampersand, tokens, &temp_pos)) {
-        if (!parse_token(identifier, tokens, &temp_pos)) parse_error(tokens, temp_pos, "identifier");
+        if (!parse_token(identifier, tokens, &temp_pos)) return false;
         temp_param.id.id_type = param_name;
         temp_param.id.name = tokens.ptr[temp_pos-1].string_value;
 
@@ -1722,6 +1752,8 @@ parse_m_params_ret:
 
 bool parse_method(Method* method, Tokens tokens, int* pos) {
     Id id;
+    bool has_generic;
+    Array generic;
     bool has_self_param;
     Param self_param;
     Array params = {0, 0, 0};
@@ -1734,6 +1766,8 @@ bool parse_method(Method* method, Tokens tokens, int* pos) {
     id.id_type = func_name;
     id.name = tokens.ptr[temp_pos-1].string_value;
 
+    has_generic = parse_gnrc_dec(&generic, tokens, &temp_pos);
+
     if (!parse_token(oParenthesis, tokens, &temp_pos)) return false;
 
     parse_m_params(&has_self_param, &self_param, &params, tokens, &temp_pos);
@@ -1743,9 +1777,11 @@ bool parse_method(Method* method, Tokens tokens, int* pos) {
     ret_type.expr_type = none;
     parse_ret_type(&ret_type, tokens, &temp_pos);
 
-    if (!parse_stmt(&stmt, tokens, &temp_pos)) return false;
+    if (!parse_cmp_stmt(&stmt, tokens, &temp_pos)) parse_error(tokens, temp_pos, "'{'");
 
     method->id = id;
+    method->has_generic = has_generic;
+    method->generic = generic;
     method->has_self_param = has_self_param;
     method->self_param = self_param;
     method->params = params;
@@ -1778,7 +1814,7 @@ parse_methods_ret:
 bool parse_imple(Imple* imple, Tokens tokens, int* pos) {
     Id cust_type_name;
     bool has_generic;
-    Id generic;
+    Array generic;
     Array methods = {0, 0, 0};
 
     int temp_pos = *pos;
@@ -1787,7 +1823,7 @@ bool parse_imple(Imple* imple, Tokens tokens, int* pos) {
     cust_type_name.id_type = type_name;
     cust_type_name.name = tokens.ptr[temp_pos-1].string_value;
 
-    parse_gnrc_dec(&generic, &has_generic, tokens, &temp_pos);
+    has_generic = parse_gnrc_dec(&generic, tokens, &temp_pos);
 
     if (!parse_token(double_colon, tokens, &temp_pos)) return false;
     if (!parse_token(oBrace, tokens, &temp_pos)) parse_error(tokens, temp_pos, "'{'");

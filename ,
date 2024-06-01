@@ -43,7 +43,7 @@ Array<T>:: {
         <- Slice<T>{self.ptr + start, end - start}
     }
 
-    iter#(`| index:<id> | start:<expr> .. opt1:<[ end:<expr> ]> | opt2:<[ element:<id> ]> | { stmts:<any> }`) {
+    #iter(`| index:<id> | start:<expr> .. opt1:<[ end:<expr> ]> | opt2:<[ element:<id> ]> | { stmts:<any> }`) {
         <index>: = <start>;
         <opt2 [ <element>:T = _ ]>;
         while (<index>++ "<" <opt [ <end> ] | .length> ) {
