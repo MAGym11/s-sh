@@ -1342,7 +1342,7 @@ bool parse_exprs(Array* exprs, Tokens tokens, int* pos) {
 
     if (!parse_token(comma, tokens, &temp_pos)) goto parse_exprs_ret;
 
-    if (!parse_exprs(exprs, tokens, &temp_pos)) parse_error(tokens, temp_pos, "expression");
+    parse_exprs(exprs, tokens, &temp_pos);
 
 parse_exprs_ret:
     *pos = temp_pos;
@@ -1468,7 +1468,7 @@ bool parse_params(Array* params, Tokens tokens, int* pos) {
 
     if (!parse_token(comma, tokens, &temp_pos)) goto parse_params_ret;
 
-    if (!parse_params(params, tokens, &temp_pos)) parse_error(tokens, temp_pos, "parameter");
+    parse_params(params, tokens, &temp_pos);
 
 parse_params_ret:
     *pos = temp_pos;

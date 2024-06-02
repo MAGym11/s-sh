@@ -1,3 +1,3 @@
-main() i32 {
-    func<Array<i32>, Error>(yur, yur2)
+main(argc:i32, argv:&&u8,) i32 {
+    func(1, 2, 3,)
 }

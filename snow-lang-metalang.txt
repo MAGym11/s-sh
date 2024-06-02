@@ -17,20 +17,25 @@ struct      : ID [gnrc_dec] ":" "{" param {";" param} [";"] "}"
 imple       : ID [gnrc_dec] ":" ":" "{" methods "}"
 gnrc_dec    : "<" ID {"," ID} ">"
 methods     : {method}
-method      : ID [gnrc_dec] "(" [m_params] ")" [ret_type] cmp_stmt
+*method      : [method_decs] ID [gnrc_dec] "(" [m_params] ")" [ret_type] cmp_stmt
+*method_decs : method_dec {"," method_dec} ","
+*method_dec  : ID ":" "(" [","] [types] ")" [ret_type]
 m_params    : self_param
             | self_param "," params
             | params
 self_param  : ["&"] ["!"] ID
 funcs       : func
             | func func
-func        : ID [gnrc_dec] "(" [params] ")" [ret_type] cmp_stmt
+*func        : [func_decs] ID [gnrc_dec] "(" [params] ")" [ret_type] cmp_stmt
+*func_decs   : func_dec {"," func_dec} ","
+*func_dec    : ID ":" "(" [types] ")" [ret_type]
+*types       : type {"," type}
 params      : param
-            | params "," param
+            | param "," params
 param       : ID ":" type
             | "&" ID ":" type
-exprs       : expr_2
-            | exprs "," expr_2
+exprs       : expr_2 [","]
+            | expr_2 "," exprs
 expr_0      : ID ":" "=" expr_2
             | ID ":" type "=" expr_2
             | expr_3 "=>" stmt [else]
